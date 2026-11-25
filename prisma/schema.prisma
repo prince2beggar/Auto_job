@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  name         String
+  passwordHash String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  profile      UserProfile?
+  notifications Notification[]
+}
+
+model UserProfile {
+  id                  String             @id @default(cuid())
+  userId              String             @unique
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName            String
+  email               String
+  phone               String?
+  country             String             @default("Bangladesh")
+  city                String?            @default("Dhaka")
+  address             String?
+  linkedin            String?
+  github              String?
+  portfolio           String?
+  currentStatus       String?            @default("Job Seeking")
+  yearsOfExperience   Float              @default(0.0)
+  bio                 String?
+  completionPercentage Int               @default(0)
+  missingFields       String             @default("[]") // JSON string array
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  educations          Education[]
+  experiences         Experience[]
+  skills              Skill[]
+  certifications      Certification[]
+  projects            Project[]
+  careerPreferences   CareerPreference?
+  masterCvs           MasterCV[]
+  cvVersions          CVVersion[]
+  jobMatches          JobMatch[]
+  applications        Application[]
+  coverLetters        CoverLetter[]
+  emailDrafts         EmailDraft[]
+}
+
+model Education {
+  id             String      @id @default(cuid())
+  profileId      String
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  degree         String
+  major          String?
+  institution    String
+  graduationYear Int?
+  cgpa           String?
+  provenance     String      @default("EXTRACTED") // EXTRACTED, ENTERED, INFERRED, CONFIRMED
+  createdAt      DateTime    @default(now())
+}
+
+model Experience {
+  id              String      @id @default(cuid())
+  profileId       String
+  profile         UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobTitle        String
+  company         String
+  location        String?
+  employmentType  String?     @default("Full-time")
+  startDate       String?
+  endDate         String?
+  isCurrent       Boolean     @default(false)
+  responsibilities String     @default("[]") // JSON array string
+  achievements    String      @default("[]") // JSON array string
+  technologies    String      @default("[]") // JSON array string
+  provenance      String      @default("EXTRACTED")
+  createdAt       DateTime    @default(now())
+}
+
+model Skill {
+  id          String      @id @default(cuid())
+  profileId   String
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String
+  category    String      @default("TECHNICAL") // TECHNICAL, SOFTWARE, BUSINESS, SOFT
+  provenance  String      @default("EXTRACTED") // EXTRACTED, ENTERED, INFERRED, CONFIRMED
+  confidence  Float       @default(1.0)
+  createdAt   DateTime    @default(now())
+}
+
+model Certification {
+  id          String      @id @default(cuid())
+  profileId   String
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String
+  issuer      String
+  issueDate   String?
+  credentialUrl String?
+  createdAt   DateTime    @default(now())
+}
+
+model Project {
+  id          String      @id @default(cuid())
+  profileId   String
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String
+  description String
+  tools       String      @default("[]") // JSON array
+  outcome     String?
+  repoUrl     String?
+  liveUrl     String?
+  createdAt   DateTime    @default(now())
+}
+
+model CareerPreference {
+  id                 String      @id @default(cuid())
+  profileId          String      @unique
+  profile            UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  targetTitles       String      @default("[]") // JSON string array
+  targetIndustries   String      @default("[]") // JSON string array
+  experienceLevel    String      @default("Entry Level (0-1 yrs)")
+  jobTypes           String      @default("[\"Full-time\", \"Internship\"]") // JSON array
+  locations          String      @default("[\"Dhaka\", \"Remote\"]") // JSON array
+  remotePreference   String      @default("Flexible")
+  minSalary          Float?      @default(30000)
+  currency           String      @default("BDT")
+  salaryNegotiable   Boolean     @default(true)
+  preferredOrgTypes  String      @default("[\"Private\", \"Government\", \"MNC\", \"Startup\"]")
+  naturalLanguageGoal String?
+  updatedAt          DateTime    @updatedAt
+}
+
+model MasterCV {
+  id               String       @id @default(cuid())
+  profileId        String
+  profile          UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  originalFilename String
+  fileType         String
+  filePath         String
+  rawText          String
+  isDefault        Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  versions         CVVersion[]
+}
+
+model CVVersion {
+  id               String       @id @default(cuid())
+  profileId        String
+  profile          UserProfile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  masterCvId       String?
+  masterCv         MasterCV?    @relation(fields: [masterCvId], references: [id])
+  jobId            String?
+  title            String
+  tailoredSummary  String
+  tailoredSkills   String       @default("[]") // JSON array
+  tailoredExperience String     @default("[]") // JSON array
+  tailoredProjects String       @default("[]") // JSON array
+  changesSummary   String       @default("[]") // JSON array
+  isApproved       Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  applications     Application[]
+}
+
+model Job {
+  id                    String              @id @default(cuid())
+  source                String              @default("Bdjobs")
+  sourceUrl             String?
+  jobType               String              @default("PRIVATE") // PRIVATE, GOVERNMENT, INTERNSHIP, TRAINEE, CONTRACT
+  title                 String
+  company               String
+  organizationType      String?             @default("Private")
+  country               String              @default("Bangladesh")
+  city                  String?             @default("Dhaka")
+  location              String              @default("Dhaka, Bangladesh")
+  remoteType            String              @default("On-site") // On-site, Hybrid, Remote
+  employmentType        String              @default("Full-time") // Full-time, Internship, Trainee, Contract
+  description           String
+  responsibilities      String              @default("[]") // JSON string array
+  requirements          String              @default("[]") // JSON string array
+  preferredRequirements String             @default("[]") // JSON string array
+  educationRequirements String              @default("Bachelor degree in related field")
+  experienceRequirements String             @default("0-1 year")
+  requiredSkills        String              @default("[]") // JSON array
+  preferredSkills       String              @default("[]") // JSON array
+  salary                String?
+  minSalary             Float?
+  maxSalary             Float?
+  currency              String              @default("BDT")
+  applicationDeadline   DateTime
+  applicationStartDate  DateTime?           @default(now())
+  applicationMethod     String              @default("EMAIL") // EMAIL, LINKEDIN, BDJOBS, COMPANY_PORTAL, GOVERNMENT_PORTAL
+  applicationUrl        String?
+  recruiterEmail        String?
+  postedDate            DateTime            @default(now())
+  discoveredDate        DateTime            @default(now())
+  status                String              @default("ACTIVE") // ACTIVE, EXPIRED, ARCHIVED
+
+  governmentCircular    GovernmentCircular?
+  matches               JobMatch[]
+  applications          Application[]
+  coverLetters          CoverLetter[]
+  emailDrafts           EmailDraft[]
+}
+
+model GovernmentCircular {
+  id                      String   @id @default(cuid())
+  jobId                   String   @unique
+  job                     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  recruitingOrganization  String
+  ministry                String
+  postTitle               String
+  vacancies               Int      @default(1)
+  educationalQualification String
+  acceptedDegrees         String   @default("[]") // JSON array
+  requiredExperience      String   @default("Not required")
+  ageLimit                String   @default("18-30 years")
+  maxAge                  Int      @default(30)
+  quotaAgeLimit           Int?     @default(32)
+  quotaInformation        String?  @default("Standard government quotas apply (Freedom fighter, ethnic, disability)")
+  districtEligibility     String?  @default("All districts eligible")
+  applicationFee          String   @default("223 BDT")
+  paymentMethod           String   @default("Teletalk SMS")
+  circularNumber          String?
+  circularPdfUrl          String?
+  applicationWebsite      String   @default("http://alljobs.teletalk.com.bd")
+  preliminaryExam         String?  @default("MCQ Preliminary (100 marks)")
+  writtenExam             String?  @default("Written Test (200 marks)")
+  vivaExam                String?  @default("Viva Voce (50 marks)")
+}
+
+model JobMatch {
+  id                    String      @id @default(cuid())
+  profileId             String
+  profile               UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobId                 String
+  job                   Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  overallScore          Int         @default(75)
+  educationScore        Int         @default(80)
+  experienceScore       Int         @default(75)
+  skillsScore           Int         @default(70)
+  roleScore             Int         @default(80)
+  locationScore         Int         @default(90)
+  eligibilityStatus     String      @default("ELIGIBLE") // ELIGIBLE, LIKELY_ELIGIBLE, NOT_ELIGIBLE, NEEDS_VERIFICATION
+  eligibilityExplanation String
+  matchReasons          String      @default("[]") // JSON array string
+  gaps                  String      @default("[]") // JSON array string
+  urgencyLevel          String      @default("NORMAL") // URGENT, HIGH, MEDIUM, NORMAL, EXPIRED
+  computedAt            DateTime    @default(now())
+
+  @@unique([profileId, jobId])
+}
+
+model Application {
+  id                String             @id @default(cuid())
+  profileId         String
+  profile           UserProfile        @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobId             String
+  job               Job                @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  cvVersionId       String?
+  cvVersion         CVVersion?         @relation(fields: [cvVersionId], references: [id])
+  status            String             @default("SAVED") // SAVED, SHORTLISTED, CV_GENERATED, READY_TO_APPLY, APPLIED, UNDER_REVIEW, INTERVIEW, REJECTED, OFFER, WITHDRAWN
+  applicationMethod String             @default("EMAIL")
+  appliedDate       DateTime?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  events            ApplicationEvent[]
+
+  @@unique([profileId, jobId])
+}
+
+model ApplicationEvent {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  eventType     String
+  title         String
+  description   String
+  timestamp     DateTime    @default(now())
+  metadata      String?     @default("{}") // JSON string
+}
+
+model CoverLetter {
+  id          String      @id @default(cuid())
+  profileId   String
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobId       String
+  job         Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  title       String
+  body        String
+  status      String      @default("DRAFT")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model EmailDraft {
+  id             String      @id @default(cuid())
+  profileId      String
+  profile        UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobId          String
+  job            Job         @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  toEmail        String
+  subject        String
+  body           String
+  attachmentName String?
+  isApproved     Boolean     @default(false)
+  isSent         Boolean     @default(false)
+  sentAt         DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   @default("INFO") // HIGH_MATCH, DEADLINE_URGENT, GOVT_CIRCULAR, STATUS_UPDATE
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
